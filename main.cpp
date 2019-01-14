@@ -25,18 +25,31 @@ public:
     
     Vertex(string taskName){
         task = taskName;
+        edgelist = nullptr;
     }
     
 };
 
 class Edge{
+public:
     Vertex from;
     Vertex to;
     
     int distance;
     
-    Edge(){
-        
+    Edge* next;
+    
+    Edge(){}
+    
+    Edge(string f, string t){
+        from = f;
+        to = t;
+    }
+    
+    Edge(Vertex f, Vertex t){
+        from = f;
+        to = t;
+        next = nullptr;
     }
     
 };
@@ -52,10 +65,36 @@ public:
     
     bool addv(string taskName){
         Vertex vertexToAdd = Vertex(taskName);
+        tasklist.insert({taskName, vertexToAdd});
+        cout << "Inserted \"" << taskName << "\"\n";
+//        for(auto it = tasklist.cbegin(); it != tasklist.cend(); ++it){
+//            cout << it->first;
+//        }
+//        cout << endl;
         return true;
     }
     
     bool adde(string from, string to){
+        auto foundFrom = tasklist.find(from);
+        auto foundTo = tasklist.find(to);
+        if((foundFrom != tasklist.end()) && (foundTo != tasklist.end())){ //"from" and "to" have actually been entered into our list somewhere
+            Edge* current = foundFrom->second.edgelist;
+            if(current == nullptr){
+                cout << "list was empty, adding now.\n";
+                tasklist.at(from).edgelist = new Edge(from, to);
+            }else{
+                while (current->next != nullptr){
+                    current = current->next;
+                }
+                current->next = new Edge(foundFrom->second, foundTo->second);
+            }
+            return true;
+//            current = edgeToAdd;
+//            tasklist.at(from).edgelist.add(edgeToAdd)
+        }else{
+            cout << "One of those tasks is not yet in the system\n";
+            return false;
+        }
         return true;
     }
     
