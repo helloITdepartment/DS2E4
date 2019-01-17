@@ -8,9 +8,13 @@
 
 #include <iostream>
 #include <map>
+#include <stack>
+#include <queue>
 //#include "graphs.h"
 
 using namespace std;
+
+
 
 class Edge;
 
@@ -21,6 +25,12 @@ public:
     //Pointer to the start of a linked list of edges to other tasks that need to come after this one
     Edge* edgelist;
     
+    int inDegree = 0;
+    int outDegree = 0;
+    
+    int startTime = 0;
+    int endTime = 0;
+    
     Vertex(){}
     
     Vertex(string taskName){
@@ -29,6 +39,8 @@ public:
     }
     
 };
+
+stack<Vertex> s;
 
 class Edge{
 public:
@@ -78,19 +90,24 @@ public:
         auto foundFrom = tasklist.find(from);
         auto foundTo = tasklist.find(to);
         if((foundFrom != tasklist.end()) && (foundTo != tasklist.end())){ //"from" and "to" have actually been entered into our list somewhere
+            foundFrom->second.outDegree++;
+            foundTo->second.inDegree++;
             Edge* current = foundFrom->second.edgelist;
             if(current == nullptr){
                 cout << "list was empty, adding now.\n";
                 tasklist.at(from).edgelist = new Edge(from, to);
             }else{
                 while (current->next != nullptr){
+                    if(((*current).from.task == from) && ((*current).to.task == to)){
+                        cout << "Edge already exists.\n";
+                        return false;
+                    }
                     current = current->next;
                 }
                 current->next = new Edge(foundFrom->second, foundTo->second);
+                current->next->next = nullptr;
             }
             return true;
-//            current = edgeToAdd;
-//            tasklist.at(from).edgelist.add(edgeToAdd)
         }else{
             cout << "One of those tasks is not yet in the system\n";
             return false;
@@ -100,10 +117,55 @@ public:
     
     void printAll(){
         //For every node, print all its edges
+        for(auto it = tasklist.cbegin(); it != tasklist.cend(); ++it){
+            cout << it->second.task << ":\n";
+            Edge* current = it->second.edgelist;
+            while(current != nullptr){
+                cout << "\tEdge from " << current->from.task << " to " << current->to.task << endl;
+                current = current->next;
+            }
+        }
+        
+        cout << endl;
     }
     
     void topologicalSort(){
-        
+        queue<Vertex> inDegreeZero;
+        //Find all nodes with indegree 0
+        for(auto it = tasklist.cbegin(); it != tasklist.cend(); ++it){
+//            it->second.startTime = 0;
+//            it->second.endTime = 0;
+            if(it->second.inDegree == 0){
+                inDegreeZero.push(it->second);
+            }
+        }
+        int time = 0;
+        while(!inDegreeZero.empty()){
+            time = DFS(time, inDegreeZero.front());
+            inDegreeZero.pop();
+        }
+        //TODO- Read off the stack
+        if(!s.empty()){
+            cout << s.top().task;
+            s.pop();
+            while(!s.empty()){
+                Vertex current = s.top();
+                cout << " -> " << current.task;
+                s.pop();
+            }
+        }
+    }
+    
+    int DFS(int time, Vertex node){
+        node.startTime = time++;
+        Edge* current = node.edgelist;
+        while(current != nullptr){
+            time = DFS(time, current->to);
+            current = current->next;
+        }
+        node.endTime = time++;
+        s.push(node);
+        return time;
     }
 };
 
@@ -146,7 +208,7 @@ int main(){
                     cout << endl;
                     break;
                 case 5:
-                    cout << "byebye";  break;
+                    cout << "byebyebye";  break;
                 default:
                     cout << "ERROR\n";
             }
