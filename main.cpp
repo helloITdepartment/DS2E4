@@ -31,11 +31,14 @@ public:
     int startTime = 0;
     int endTime = 0;
     
+    bool visited;
+    
     Vertex(){}
     
     Vertex(string taskName){
         task = taskName;
         edgelist = nullptr;
+        visited = false;
     }
     
 };
@@ -44,8 +47,8 @@ stack<Vertex> s;
 
 class Edge{
 public:
-    Vertex from;
-    Vertex to;
+    Vertex* from;
+    Vertex* to;
     
     int distance;
     
@@ -53,12 +56,12 @@ public:
     
     Edge(){}
     
-    Edge(string f, string t){
-        from = f;
-        to = t;
-    }
+//    Edge(string f, string t){
+//        from = f;
+//        to = t;
+//    }
     
-    Edge(Vertex f, Vertex t){
+    Edge(Vertex* f, Vertex* t){
         from = f;
         to = t;
         next = nullptr;
@@ -76,14 +79,15 @@ public:
     }
     
     bool addv(string taskName){
-        Vertex vertexToAdd = Vertex(taskName);
-        tasklist.insert({taskName, vertexToAdd});
-        cout << "Inserted \"" << taskName << "\"\n";
-//        for(auto it = tasklist.cbegin(); it != tasklist.cend(); ++it){
-//            cout << it->first;
-//        }
-//        cout << endl;
-        return true;
+        auto yeger = tasklist.find(taskName);
+        if(yeger == tasklist.end()){
+            Vertex vertexToAdd = Vertex(taskName);
+            tasklist.insert({taskName, vertexToAdd});
+            cout << "Inserted \"" << taskName << "\"\n";
+            return true;
+        }else{
+            return false;
+        }
     }
     
     bool adde(string from, string to){
@@ -95,16 +99,16 @@ public:
             Edge* current = foundFrom->second.edgelist;
             if(current == nullptr){
                 cout << "list was empty, adding now.\n";
-                tasklist.at(from).edgelist = new Edge(from, to);
+                tasklist.at(from).edgelist = new Edge(&(foundFrom->second), &(foundTo->second));
             }else{
                 while (current->next != nullptr){
-                    if(((*current).from.task == from) && ((*current).to.task == to)){
+                    if(((*current).from->task == from) && ((*current).to->task == to)){
                         cout << "Edge already exists.\n";
                         return false;
                     }
                     current = current->next;
                 }
-                current->next = new Edge(foundFrom->second, foundTo->second);
+                current->next = new Edge(&(foundFrom->second), &(foundTo->second));
                 current->next->next = nullptr;
             }
             return true;
@@ -121,7 +125,7 @@ public:
             cout << it->second.task << ":\n";
             Edge* current = it->second.edgelist;
             while(current != nullptr){
-                cout << "\tEdge from " << current->from.task << " to " << current->to.task << endl;
+                cout << "\tEdge from " << current->from->task << " to " << current->to->task << endl;
                 current = current->next;
             }
         }
@@ -132,16 +136,17 @@ public:
     void topologicalSort(){
         queue<Vertex> inDegreeZero;
         //Find all nodes with indegree 0
-        for(auto it = tasklist.cbegin(); it != tasklist.cend(); ++it){
+        for(auto it = tasklist.begin(); it != tasklist.end(); ++it){
 //            it->second.startTime = 0;
 //            it->second.endTime = 0;
+            it->second.visited = false;
             if(it->second.inDegree == 0){
                 inDegreeZero.push(it->second);
             }
         }
         int time = 0;
         while(!inDegreeZero.empty()){
-            time = DFS(time, inDegreeZero.front());
+            time = DFS(time, &(inDegreeZero.front()));
             inDegreeZero.pop();
         }
         //TODO- Read off the stack
@@ -156,15 +161,19 @@ public:
         }
     }
     
-    int DFS(int time, Vertex node){
-        node.startTime = time++;
-        Edge* current = node.edgelist;
+    int DFS(int time, Vertex* node){
+        node->startTime = time++;
+//        node->visited = false;
+        Edge* current = node->edgelist;
         while(current != nullptr){
-            time = DFS(time, current->to);
+            if((*(current->to)).visited == false){
+                time = DFS(time, (current->to));
+            }
             current = current->next;
         }
-        node.endTime = time++;
-        s.push(node);
+        node->endTime = time++;
+        node->visited = true;
+        s.push(*(node));
         return time;
     }
 };
